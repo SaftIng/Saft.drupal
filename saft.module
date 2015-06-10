@@ -12,7 +12,7 @@ function saft_initlib()
 /**
  * Implements hook_help().
  */
-function Saft_help($path, $arg)
+function saft_help($path, $arg)
 {
     $saftPath = 'sites/all/modules/saft/Saft/vendor/saft';
 
@@ -25,7 +25,7 @@ function Saft_help($path, $arg)
 
     // show a simple info page with version info and further links
     switch ($path) {
-        case 'admin/help#Saft':
+        case 'admin/help#saft':
             return 'Info page for Saft library and Saft.skeleton. '.
                 'You are running Saft at version <strong>'. $saftInfo['version'] .'</strong> '.
                 'and Saft.skeleton at version <strong>'. $saftSkeletonInfo['version'] .'</strong>.'.
