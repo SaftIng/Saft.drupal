@@ -1,0 +1,33 @@
+{
+    "name": "saft/saft-skeleton",
+    "description": "This collection of classes helps you to accelerate while developing Semantic Web applications using the Saft framework.",
+    "version": "0.1.0-alpha1",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Natanael Arndt",
+            "homepage": "http://aksw.org/NatanaelArndt",
+            "email": "arndtn@gmail.com",
+            "role": "Developer"
+        },
+        {
+            "name": "Konrad Abicht",
+            "homepage": "http://inspirito.de",
+            "email": "hi@inspirito.de",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "tombzombie/dice": "dev-PHP5.3",
+        "saft/saft": "dev-master",
+        "slim/slim": "~2.0"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Saft\\Skeleton\\": [
+                "src/Saft/Skeleton/"
+            ]
+        }
+    }
+}

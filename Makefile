@@ -1,0 +1,30 @@
+default:
+	@echo ""
+	@echo "Saft.drupal - CLI"
+	@echo ""
+	@echo "- make update - Install or update Saft and Saft.skeleton."
+	@echo ""
+
+update:
+	@echo ""
+	@echo "> Clear folders"
+	rm -rf Saft
+	mkdir Saft
+
+	@echo ""
+	@echo "> Fetch Saft and Saft.skeleton"
+	cp composer.json Saft/composer.json
+	cd Saft && composer update --ignore-platform-reqs
+
+	@echo ""
+	@echo "> Remove all .git folders from subfolders"
+	cd Saft && rm `find ./ -name '.git'` -rf
+
+	@echo ""
+	@echo "> Remove obsolete files from subfolders"
+	cd Saft && rm `find ./ -type f -name '*.md'` -rf
+	cd Saft && rm `find ./ -type f -name '*.nt'` -rf
+	cd Saft && rm `find ./ -type f -name '*.out'` -rf
+	cd Saft && rm `find ./ -type f -name '*.ttl'` -rf
+	cd Saft && rm `find ./ -type f -name '*.xhtml'` -rf
+	cd Saft && rm `find ./ -type f -name '*.xml'` -rf
