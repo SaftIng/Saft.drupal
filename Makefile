@@ -22,9 +22,16 @@ update:
 
 	@echo ""
 	@echo "> Remove obsolete files from subfolders"
+	cd Saft && rm `find ./ -type f -name '*.gif'` -rf
+	cd Saft && rm `find ./ -type f -name '*.ini'` -rf
 	cd Saft && rm `find ./ -type f -name '*.md'` -rf
 	cd Saft && rm `find ./ -type f -name '*.nt'` -rf
 	cd Saft && rm `find ./ -type f -name '*.out'` -rf
+	cd Saft && rm `find ./ -type f -name '*Test.php'` -rf
+	cd Saft && rm `find ./ -type f -name '*.phpt'` -rf
+	cd Saft && rm `find ./ -type f -name '*.tiff'` -rf
 	cd Saft && rm `find ./ -type f -name '*.ttl'` -rf
+	cd Saft && rm `find ./ -type f -name '*.txt'` -rf
 	cd Saft && rm `find ./ -type f -name '*.xhtml'` -rf
 	cd Saft && rm `find ./ -type f -name '*.xml'` -rf
+	cd Saft && rm `find ./ -type f -name '*.yml'` -rf
