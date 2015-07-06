@@ -1,4 +1,4 @@
-# Saft.drupal7
+# Saft Framework Integration Module for Drupal 7
 
 This module contains the Saft library (+ vendors) and provides a Drupal integration. The Saft library is the aim to build a collection of components which helps anyone who wants to create applications by using Semantic Web technology.
 
