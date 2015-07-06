@@ -11,9 +11,9 @@ use Saft\Rdf\StatementIterator;
 use Saft\Rdf\StatementIteratorFactory;
 use Saft\Sparql\SparqlUtils;
 use Saft\Sparql\Query\QueryFactory;
-use Saft\Store\Result\Result;
-use Saft\Store\Result\EmptyResult;
-use Saft\Store\Result\ResultFactory;
+use Saft\Sparql\Result\Result;
+use Saft\Sparql\Result\EmptyResult;
+use Saft\Sparql\Result\ResultFactory;
 
 /**
  * Predefined sparql Store. All Triple methods reroute to the query-method. In the specific sparql-Store those
@@ -100,7 +100,6 @@ abstract class AbstractSparqlStore implements Store
             // given $graph forces usage of it and not the graph from the statement instance
             if (null !== $graph) {
                 $graphUriToUse = $graph->getUri();
-                $statement->setGraph($graph);
 
             // use graph from statement
             } elseif (null !== $statement->getGraph()) {
@@ -128,7 +127,8 @@ abstract class AbstractSparqlStore implements Store
 
                     foreach ($batch as $batchEntries) {
                         $content .= $this->sparqlFormat(
-                            $this->statementIteratorFactory->createIteratorFromArray(array($batchEntries))
+                            $this->statementIteratorFactory->createStatementIteratorFromArray(array($batchEntries)),
+                            $graph
                         ) .' ';
                     }
 
@@ -144,12 +144,14 @@ abstract class AbstractSparqlStore implements Store
         }
 
         // handle remaining statements of the batch (that happens if the batch size was not reached (again))
+        // TODO remove this code duplication. Maybe move the repeeted code to a new method
         $content = '';
 
         foreach ($batchStatements as $graphUriToUse => $batch) {
             foreach ($batch as $batchEntries) {
                 $content .= $this->sparqlFormat(
-                    $this->statementIteratorFactory->createIteratorFromArray(array($batchEntries))
+                    $this->statementIteratorFactory->createStatementIteratorFromArray(array($batchEntries)),
+                    $graph
                 ) .' ';
             }
         }
@@ -198,7 +200,7 @@ abstract class AbstractSparqlStore implements Store
 
         }
 
-        $statementIterator = $this->statementIteratorFactory->createIteratorFromArray(
+        $statementIterator = $this->statementIteratorFactory->createStatementIteratorFromArray(
             array($statement)
         );
 
@@ -266,25 +268,18 @@ abstract class AbstractSparqlStore implements Store
      */
     public function getMatchingStatements(Statement $statement, Node $graph = null, array $options = array())
     {
-        // if $graph was given, but its not a named node, set it to null.
-        if (null !== $graph && false === $graph->isNamed()) {
-            $graph = null;
-        }
         // otherwise check, if graph was set in the statement and it is a named node and use it, if so.
-        if (null === $graph
-            && null !== $statement->getGraph()
-            && true === $statement->getGraph()->isNamed()) {
+        if (null === $graph && $statement->isQuad()) {
             $graph = $statement->getGraph();
         }
 
         /*
          * Build query
          */
-        $query = 'SELECT ?s ?p ?o ';
-        if (null !== $graph) {
-            $query .= 'FROM <'. $graph->getUri() .'> ';
+        $query = 'SELECT ?s ?p ?o { ?s ?p ?o ';
+        if ($graph !== null) {
+            $query = 'SELECT ?s ?p ?o ?g { graph ?g { ?s ?p ?o } ';
         }
-        $query .= 'WHERE { ?s ?p ?o ';
 
         // create shortcuts for S, P and O
         $subject = $statement->getSubject();
@@ -292,51 +287,56 @@ abstract class AbstractSparqlStore implements Store
         $object = $statement->getObject();
 
         // add filter, if subject is a named node or literal
-        if ($subject->isNamed()) {
-            $query .= 'FILTER (str(?s) = "'. $subject->getUri() .'") ';
+        if (!$subject->isPattern()) {
+            $query .= 'FILTER (?s = '. $subject->toNQuads() .') ';
         }
 
         // add filter, if predicate is a named node or literal
-        if ($predicate->isNamed()) {
-            $query .= 'FILTER (str(?p) = "'. $predicate->getUri() .'") ';
+        if (!$predicate->isPattern()) {
+            $query .= 'FILTER (?p = '. $predicate->toNQuads() .') ';
         }
 
         // add filter, if object is a named node or literal
-        if ($object->isNamed()) {
-            $query .= 'FILTER (str(?o) = "'. $object->getUri() .'") ';
-        } elseif ($object->isLiteral()) {
-            $query .= 'FILTER (str(?o) = "'. $object->getValue() .'") ';
+        if (!$object->isPattern()) {
+            $query .= 'FILTER (?o = '. $object->toNQuads() .') ';
         }
+
+        // add filter, if graph is a named node or literal
+        if ($graph !== null && !$graph->isPattern()) {
+            $query .= 'FILTER (?g = '. $graph->toNQuads() .') ';
+        }
+
         $query .= '}';
 
         // execute query and save result
         // TODO transform getMatchingStatements into lazy loading, so a batch loading is possible
         $result = $this->query($query, $options);
 
-        if (null === $result) {
-            return $this->resultFactory->createEmptyResult();
-        }
-
         /*
          * Transform SetResult entries to Statement instances.
          */
-        $entries = array();
-        foreach ($result as $entry) {
-            $statementList = array();
-            $i = 0;
-            foreach ($result->getVariables() as $variable) {
-                $statementList[$i++] = $entry[$variable];
+        $statementList = array();
+        if ($graph !== null) {
+            foreach ($result as $entry) {
+                $statementList[] = $this->statementFactory->createStatement(
+                    $entry['s'],
+                    $entry['p'],
+                    $entry['o'],
+                    $entry['g']
+                );
             }
-            $entries[] = $this->statementFactory->createStatement(
-                $statementList[0],
-                $statementList[1],
-                $statementList[2],
-                $graph
-            );
+        } else {
+            foreach ($result as $entry) {
+                $statementList[] = $this->statementFactory->createStatement(
+                    $entry['s'],
+                    $entry['p'],
+                    $entry['o']
+                );
+            }
         }
 
         // return a StatementIterator which contains the matching statements
-        return $this->statementIteratorFactory->createIteratorFromArray($entries);
+        return $this->statementIteratorFactory->createStatementIteratorFromArray($statementList);
     }
 
     /**
@@ -362,7 +362,7 @@ abstract class AbstractSparqlStore implements Store
             $graph = $statement->getGraph();
         }
 
-        $statementIterator = $this->statementIteratorFactory->createIteratorFromArray(
+        $statementIterator = $this->statementIteratorFactory->createStatementIteratorFromArray(
             array($statement)
         );
 
@@ -385,6 +385,7 @@ abstract class AbstractSparqlStore implements Store
      */
     protected function sparqlFormat(StatementIterator $statements, Node $graph = null)
     {
-        return SparqlUtils::statementIteratorToSparqlFormat($statements, $graph);
+        $sparqlUtils = new SparqlUtils();
+        return $sparqlUtils->statementIteratorToSparqlFormat($statements, $graph);
     }
 }

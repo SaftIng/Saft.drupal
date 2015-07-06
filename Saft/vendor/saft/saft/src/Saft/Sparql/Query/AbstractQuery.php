@@ -94,13 +94,15 @@ abstract class AbstractQuery implements Query
      */
     public function determineEntityType($entity)
     {
+        $nodeUtils = new NodeUtils();
+
         // remove braces at the beginning (only if $entity looks like <http://...>)
         if ('<' == substr($entity, 0, 1)) {
             $entity = str_replace(array('>', '<'), '', $entity);
         }
 
         // checks if $entity is an URL
-        if (true === NodeUtils::simpleCheckURI($entity)) {
+        if (true === $nodeUtils->simpleCheckURI($entity)) {
             return 'uri';
 
         // checks if ^^< is in $entity OR if $entity is surrounded by quotation marks
@@ -689,7 +691,7 @@ abstract class AbstractQuery implements Query
          */
         $firstPart = substr($adaptedQuery, 0, 3);
 
-        switch($firstPart) {
+        switch ($firstPart) {
             // ASK
             case 'ask':
                 return 'askQuery';
@@ -704,7 +706,7 @@ abstract class AbstractQuery implements Query
             default:
                 $firstPart = substr($adaptedQuery, 0, 6);
 
-                switch($firstPart) {
+                switch ($firstPart) {
                     // CLEAR GRAPH
                     case 'clear ':
                         return 'graphQuery';
@@ -736,7 +738,6 @@ abstract class AbstractQuery implements Query
                         return 'selectQuery';
 
                     default:
-
                         // check if query is of type: WITH <http:// ... > DELETE { ... } WHERE { ... }
                         // TODO make it more precise
                         if (false !== strpos($adaptedQuery, 'with')

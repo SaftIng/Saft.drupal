@@ -13,9 +13,9 @@ use Saft\Rdf\NodeFactory;
 use Saft\Rdf\NodeUtils;
 use Saft\Sparql\Query\AbstractQuery;
 use Saft\Sparql\Query\QueryFactory;
+use Saft\Sparql\Result\ResultFactory;
 use Saft\Store\AbstractSparqlStore;
 use Saft\Store\Store;
-use Saft\Store\Result\ResultFactory;
 
 /**
  * SparqlStore implementation of a client which handles store operations via HTTP. It is able to determine some
@@ -39,6 +39,11 @@ class Http extends AbstractSparqlStore
      * @var NodeFactory
      */
     private $nodeFactory;
+
+    /**
+     * @var NodeUtils
+     */
+    protected $nodeUtils;
 
     /**
      * @var QueryFactory
@@ -79,6 +84,8 @@ class Http extends AbstractSparqlStore
         StatementIteratorFactory $statementIteratorFactory,
         array $configuration
     ) {
+        $this->nodeUtils = new NodeUtils();
+
         $this->configuration = $configuration;
 
         $this->checkRequirements();
@@ -218,10 +225,6 @@ class Http extends AbstractSparqlStore
             }
         } catch (\Exception $e) {
             // ignore exception here and assume we could not update a triple.
-            echo $e->getMessage() ."
-
-            ";
-
             // whatever happens, try to remove the fresh graph.
             try {
                 $this->query('DROP GRAPH <'. $graph .'>');
@@ -271,7 +274,7 @@ class Http extends AbstractSparqlStore
         ), $this->configuration);
 
         // authenticate only if an authUrl was given.
-        if (NodeUtils::simpleCheckURI($configuration['authUrl'])) {
+        if ($this->nodeUtils->simpleCheckURI($configuration['authUrl'])) {
             $this->authenticateOnServer(
                 $configuration['authUrl'],
                 $configuration['username'],
@@ -280,7 +283,7 @@ class Http extends AbstractSparqlStore
         }
 
         // check query URL
-        if (false === NodeUtils::simpleCheckUri($configuration['queryUrl'])) {
+        if (false === $this->nodeUtils->simpleCheckUri($configuration['queryUrl'])) {
             throw new \Exception('Parameter queryUrl is not an URI or empty: '. $configuration['queryUrl']);
         }
 

@@ -1,6 +1,5 @@
 name = "Saft Framework Integration Module"
 description = "This module contains the Saft library (+ vendors) and provides a Drupal integration. The Saft library is the aim to build a collection of components which helps anyone who wants to create applications by using Semantic Web technology."
 core = "7.x"
-version = "7.x-0.1"
+version = "7.x-0.1.0-alpha3"
 package = "Semantic Web"
-dependencies[] = xautoload (>= 7.x-5.0)

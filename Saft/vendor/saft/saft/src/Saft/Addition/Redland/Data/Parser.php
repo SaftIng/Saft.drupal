@@ -24,33 +24,30 @@ class Parser implements ParserInterface
      */
     protected $parser;
 
-    public function __construct()
+    public function __construct($serialization)
     {
-        if (false === extension_loaded('redland')) {
+        if (!extension_loaded('redland')) {
             throw new \Exception('Redland php5-librdf is required for this parser');
         }
 
-        $format = 'turtle';
-
         $this->world = librdf_php_get_world();
-        $this->parser = librdf_new_parser($this->world, $format, null, null);
+        $this->parser = librdf_new_parser($this->world, $serialization, null, null);
 
-        if (false === $this->parser) {
-            throw new \Exception('Failed to create librdf_parser of type: '. $format);
+        if (false === $this->parser || null === $this->parser) {
+            throw new \Exception('Failed to create librdf_parser of type: ' . $serialization);
         }
     }
 
     /**
      * @param $inputString
      * @param $baseUri
-     * @param $serialization
      * @return StatementIterator
      * @throws Exception
      */
-    public function parseStringToIterator($inputString, $baseUri = null, $serialization = null)
+    public function parseStringToIterator($inputString, $baseUri = null)
     {
-        $redlandStream = librdf_parser_parse_string_as_stream($this->parser, $data, $rdfUri);
-        if (false === $redlandStream) {
+        $redlandStream = librdf_parser_parse_string_as_stream($this->parser, $inputString, $baseUri);
+        if (false === $redlandStream || null === $redlandStream) {
             throw new \Exception('Failed to parse RDF stream');
         }
 
@@ -60,11 +57,10 @@ class Parser implements ParserInterface
     /**
      * @param $inputStream
      * @param $baseUri
-     * @param $serialization
      * @return StatementIterator
      * @throws Exception
      */
-    public function parseStreamToIterator($inputStream, $baseUri = null, $serialization = null)
+    public function parseStreamToIterator($inputStream, $baseUri = null)
     {
         $rdfUri = librdf_new_uri($this->world, $baseUri);
 
@@ -74,7 +70,7 @@ class Parser implements ParserInterface
 
         $data = file_get_contents($inputStream);
 
-        return $this->parseStingToIterator($data, $baseUri, $serialization);
+        return $this->parseStringToIterator($data, $baseUri, $serialization);
     }
 
     public function getCurrentPrefixlist()
